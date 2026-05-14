@@ -1,15 +1,31 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
-from app.db.session import engine
-from app.db.base import Base
-from app.db.models import user  # importante importar el modelo
-from app.api.v1.endpoints import users
-from app.api.v1.endpoints import auth
-from app.api.v1.endpoints import posts
 
-Base.metadata.create_all(bind=engine)
-# print("Database tables created successfully.")
+from app.api.v1.endpoints import auth, posts, users
 
-app = FastAPI()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Application starting up")
+    yield
+    logger.info("Application shutting down")
+
+
+app = FastAPI(
+    title="Backend Production API",
+    description="User authentication and posts management REST API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
 app.include_router(users.router, prefix="/api/v1", tags=["users"])
 app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
 app.include_router(posts.router, prefix="/api/v1", tags=["posts"])
@@ -17,9 +33,9 @@ app.include_router(posts.router, prefix="/api/v1", tags=["posts"])
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"message": "Backend Production API"}
 
 
 @app.get("/health")
-def read_health():
+def health_check():
     return {"status": "ok"}
